@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="navbar">AI Seating Dashboard</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Upload Excel</h3>
+<input type="file" id="fileInput">
+<button onclick="uploadFile()">Generate</button>
+<button onclick="downloadPDF()">Download PDF</button>
+</div>
+
+<div id="stats"></div>
+<div id="output"></div>
+
+</div>
+
+<script>
+let generatedData = null;
+
+async function uploadFile() {
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch('http://127.0.0.1:5000/upload', {
+        method: 'POST',
+        body: formData
+    });
+
+    const data = await res.json();
+    generatedData = data.rooms;
+
+    document.getElementById('stats').innerHTML =
+        `<div class="stats">
+            Total Students: ${data.total_students} <br>
+            Total Rooms: ${data.rooms.length}
+        </div>`;
+
+    const output = document.getElementById('output');
+    output.innerHTML = '';
+
+    data.rooms.forEach(room => {
+        const card = document.createElement('div');
+        card.className = "card";
+
+        card.innerHTML += `<h3>${room.room} (${room.count} students)</h3>`;
+
+        const table = document.createElement('table');
+
+        room.layout.forEach(row => {
+            const tr = document.createElement('tr');
+
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.innerText = cell;
+                tr.appendChild(td);
+            });
+
+            table.appendChild(tr);
+        });
+
+        card.appendChild(table);
+        output.appendChild(card);
+    });
+}
+
+async function downloadPDF() {
+    await fetch('http://127.0.0.1:5000/export_pdf', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(generatedData)
+    });
+
+    alert("PDF generated!");
+}
+</script>
+
+</body>
+</html>
